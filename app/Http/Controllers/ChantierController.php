@@ -1,0 +1,131 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Chantier;
+use App\Http\Requests\StoreChantierRequest;
+use App\Http\Requests\UpdateChantierRequest;
+use App\Models\Etape;
+use App\Models\Ouvrier;
+use App\Models\Tache;
+use Illuminate\Broadcasting\Channel;
+use Inertia\Inertia;
+
+class ChantierController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        $chantiers= Chantier::all();
+        return Inertia::render('chantier/Index',['chantiers'=>$chantiers]);
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return Inertia::render('chantier/Create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(StoreChantierRequest $request)
+    {
+        $rules=[
+                'nom_chantier'=>'string',
+                'localisation'=>'string',
+                'Etat'=>"string",
+                'created_at'=>now(),
+                'updated_at'=>now(),
+        ];
+        if($request->DateDebutPrevue){
+            $rules['DateDebutPrevue']='date|after_or_equal:today|before:DateFinPrevue';
+        }
+        if($request->DateFinPrevue){
+            $rules['DateFinPrevue']='date|after_or_equal:today|after:DateDebutPrevue';
+        }
+        $validatedData= $request->validate($rules);
+        Chantier::create($validatedData);
+        return to_route('chantier.index');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Chantier $chantier)
+    {
+        $taches= Tache::where('chantier_id',$chantier->id)->get();
+        $ouvriers= Ouvrier::all();
+        $etapes=Etape::with(['ouvriers' => function ($query) {
+                    $query->where('EtatAffectation', 'affecté');
+                }])->get();
+        return Inertia::render('chantier/Show',[
+            'chantier'=> $chantier,
+            'taches'=>$taches,
+            'ouvriers'=>$ouvriers,
+            'etapes'=>$etapes
+
+        ]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Chantier $chantier)
+    {
+        return Inertia::render('chantier/Edit', ['chantier' => $chantier]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateChantierRequest $request, Chantier $chantier)
+    {
+       
+        if($request->Etat){
+            if( $request->Etat=="en cours"){
+                $chantier->update(['Etat'=>$request->Etat,'DateDebutReelle'=>now()]);
+            }
+            if( $request->Etat=="terminé"){
+                if ($chantier->DateDebutReelle=="") {
+                    return to_route('chantier.show',$chantier)->with('error','Le chantier n\'a pas été démaré');
+                }
+                $chantier->update(['Etat'=>$request->Etat,'DateFinReelle'=>now()]);
+            }
+             if( $request->Etat=="en attente"){
+                $chantier->update(['Etat'=>$request->Etat,'DateDebutReelle'=>now()]);
+            }
+        }else{
+              $rules=[
+                'nom_chantier'=>'string',
+                'localisation'=>'string',
+                'Etat'=>"string",
+                    'updated_at'=>now(),
+            ];
+            if($request->DateDebutPrevue){
+                $rules['DateDebutPrevue']='date|after_or_equal:today|before:DateFinPrevue';
+            }
+            if($request->DateFinPrevue){
+                $rules['DateFinPrevue']='date|after_or_equal:today|after:DateDebutPrevue';
+            }
+            $validatedData= $request->validate($rules);
+            
+            $chantier->update($validatedData);
+        }
+      
+      
+        return to_route('chantier.show',$chantier);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Chantier $chantier)
+    {
+        //
+    }
+}
