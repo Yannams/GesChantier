@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuSubButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, CirclePlus, Folder, Grid, HardHat, LayoutGrid, ListCheck, Pickaxe, Plus } from 'lucide-vue-next';
+import { BookOpen, Building, CirclePlus, Folder, Grid, HardHat, LayoutGrid, ListCheck, Pickaxe, Plus } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import Icon from './Icon.vue';
 
@@ -18,7 +18,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Chantier',
         href: '',
-        icon: Pickaxe,
+        icon: Building,
         isOpen:false,
         children : [
              {
@@ -50,7 +50,26 @@ const mainNavItems: NavItem[] = [
                icon: CirclePlus, 
             }
         ]
+    },
+    {
+        title: 'Matériel',
+        href: '',
+        icon: Pickaxe,
+        isOpen:false,
+        children : [
+             {
+               title: 'Tous',
+               href: route('materiel.index'),
+               icon: Grid   , 
+            },
+            {
+               title: 'Ajouter',
+               href: route('materiel.create'),
+               icon: CirclePlus, 
+            }
+        ]
     }
+
 ];
 
 const footerNavItems: NavItem[] = [

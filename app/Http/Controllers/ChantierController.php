@@ -6,8 +6,10 @@ use App\Models\Chantier;
 use App\Http\Requests\StoreChantierRequest;
 use App\Http\Requests\UpdateChantierRequest;
 use App\Models\Etape;
+use App\Models\Materiel;
 use App\Models\Ouvrier;
 use App\Models\Tache;
+use Carbon\Carbon;
 use Illuminate\Broadcasting\Channel;
 use Inertia\Inertia;
 
@@ -63,12 +65,19 @@ class ChantierController extends Controller
         $etapes=Etape::with(['ouvriers' => function ($query) {
                     $query->where('EtatAffectation', 'affecté');
                 }])->get();
+        $materielsDisponibles=Materiel::where('etat','disponible')->get();
+        $materielsChantier=$chantier->materiels()->get()->map(function($materiel){
+           $materiel->date_debut_affectation_formated=date('d/m/Y',strtotime($materiel->pivot->date_debut_affectation));
+           $materiel->date_fin_affectation_formated=date('d/m/Y',strtotime($materiel->pivot->date_fin_affectation));
+           return $materiel;
+        });
         return Inertia::render('chantier/Show',[
             'chantier'=> $chantier,
             'taches'=>$taches,
             'ouvriers'=>$ouvriers,
-            'etapes'=>$etapes
-
+            'etapes'=>$etapes,
+            'materielsDisponibles'=>$materielsDisponibles,
+            'materielsChantier'=>$materielsChantier
         ]);
     }
 

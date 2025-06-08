@@ -13,9 +13,15 @@ return new class extends Migration
     {
         Schema::create('materiels', function (Blueprint $table) {
             $table->id();
-            $table->string('nom_matériel');
+            $table->string('nom_materiel');
             $table->text('Description');
+            $table->string('matricule')->nullable();
+            $table->integer('quantite_totale')->nullable();
+            $table->integer('quantite_disponible')->nullable();
+            $table->boolean('gestion_par_unite')->default(false);
             $table->enum('etat',['disponible','utilisé']);
+            $table->unsignedBigInteger('categorie_materiel_id');
+            $table->foreign('categorie_materiel_id')->references('id')->on('categorie_materiels')->onDelete('cascade');
             $table->timestamps();
         });
     }

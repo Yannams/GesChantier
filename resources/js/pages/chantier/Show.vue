@@ -24,12 +24,16 @@ import {Select,SelectContent,SelectGroup,SelectItem,SelectLabel,SelectTrigger,Se
 import {ContextMenu,ContextMenuCheckboxItem, ContextMenuContent,ContextMenuItem,ContextMenuLabel,ContextMenuRadioGroup,ContextMenuRadioItem,ContextMenuSeparator,ContextMenuShortcut,ContextMenuSub,ContextMenuSubContent,ContextMenuSubTrigger,ContextMenuTrigger,} from '@/components/ui/context-menu'
 import axios from 'axios'
 import ScrollArea from '@/components/ui/scroll-area/ScrollArea.vue';
+import {Popover,PopoverContent,PopoverTrigger,} from '@/components/ui/popover';
+import {Command,CommandDialog,CommandEmpty,CommandGroup,CommandInput,CommandItem,CommandList,CommandSeparator  } from '@/components/ui/command'
 
 const props= defineProps({ 
     chantier: Object,
     taches:Object,
     ouvriers:Object,
     etapes: Object,
+    materielsDisponibles: Object,
+    materielsChantier:Object,
 })
 
 
@@ -60,6 +64,7 @@ const formChantier = useForm({
         });
     };
 
+    
     const formEtape = useForm({
         libelle: '',
         Description: '',
@@ -100,6 +105,7 @@ const formChantier = useForm({
     };
     const etapes = ref([...props.etapes])
 
+
    const supprimerEtape = async (id) => {
         try {
             await axios.delete(`/etape/${id}`)
@@ -111,6 +117,31 @@ const formChantier = useForm({
         }
     }
 
+    const materielSelected= ref()
+    const open= ref(false)
+    watch(materielSelected, (val) => {
+        formMateriel.materiel_id = val?.id ?? ''
+    })
+     const formMateriel = useForm({
+       materiel_id: "",
+       date_debut_affectation:"",
+       date_fin_affectation:"",
+       chantier_id:props.chantier.id,
+    });
+
+    const submitMateriel = () => {
+        formMateriel.post(route('materielAdd'));    
+        formMateriel.reset('materiel_id','date_debut_affectation','date_fin_affectation');
+    };    
+
+    const deleteMateriel=(materielChantier)=>{
+        formMateriel.materiel_id=materielChantier.pivot.materiel_id 
+        formMateriel.post(route('RemoveMateriel'), {
+            onFinish: () => formMateriel.reset('materiel_id'),
+        })
+    }
+
+
    async function toggleTerminee(etape, nouvelleValeur) {
     console.log(nouvelleValeur);
     
@@ -120,19 +151,25 @@ const formChantier = useForm({
                 tache_id:etape.tache_id,
             })
 
-            const nouvelleEtape = response.data
-            console.log(response.data)
+            const nouvelleEtape = response.data.etape
             const index = etapes.value.findIndex(e => e.id === nouvelleEtape.id)
+            
             if (index !== -1) {
             // supprime 1 élément à la position `index` et y insère `nouvelleEtape`
-                etapes.value.splice(index, 1, nouvelleEtape)
+                etapes.value[index].Etat = nouvelleEtape.Etat
+                etapes.value[index].DateDebutReelle = nouvelleEtape.DateDebutReelle
+                etapes.value[index].DateFinReelle = nouvelleEtape.DateFinReelle
+
             }
+
+      
 
         } catch (e) {
             console.error(e)
-        }
+        }$
         
     }
+
   const etatLocal = ref(props.chantier?.Etat || 'en attente');
 
     // Synchroniser la prop chantier si elle change
@@ -159,11 +196,30 @@ const formChantier = useForm({
 const remplirFormulairEtape=(etape)=>{
     formEtape.libelle=etape.libelle
     formEtape.Description=etape.Description
+    formEtape.DateDebutPrevue=etape.DateDebutPrevue
+    formEtape.DateFinPrevue=etape.DateFinPrevue
     formEtape.ouvrier_id=etape.ouvriers.map(o => o.id)
     formEtape.tache_id=etape.tache_id
     formEtape.chantier_id=props.chantier?.id
     
 }
+function statutTache(tacheId) {
+  const etapesAssociees = etapes.value.filter(e => e.tache_id === tacheId)
+  const etats = etapesAssociees.map(e => e.Etat)
+
+  if (etats.length === 0) return 'En attente'
+
+  if (etats.every(e => e === 'terminé')) {
+    return 'Terminé'
+  }
+
+  if (etats.some(e => e === 'en cours' || e === 'terminé')) {
+    return 'En cours'
+  }
+
+  return 'En attente'
+}
+
 
 const formatDate=(date)=>{
 
@@ -216,10 +272,9 @@ const formatDate=(date)=>{
             </CardHeader>
             
             <CardContent>
-                <div class="flex items-center"> <Calendar class="h-5 w-5 opacity-50 mr-1"/> <span class="text-muted-foreground"> Date début prévue: </span> <span class="font-bold ml-2"> {{chantier?.DateDebutPrevue ? formatDate(chantier?.DateDebutPrevue) : ''}}</span> </div>
-                <div class="flex items-center"> <Calendar class="h-5 w-5 opacity-50 mr-1"/> <span class="text-muted-foreground"> Date fin prévue: </span> <span class="font-bold ml-2"> {{chantier?.DateFinPrevue  ? formatDate(chantier?.DateFinPrevue) : '' }}</span> </div>
-                <div class="flex items-center"> <Calendar class="h-5 w-5 opacity-50 mr-1"/> <span class="text-muted-foreground"> Date Début réelle: </span> <span class="font-bold ml-2"> {{chantier?.DateDebutReelle ? formatDate(chantier?.DateDebutReelle) : ""}}</span> </div>
-                <div class="flex items-center"> <Calendar class="h-5 w-5 opacity-50 mr-1"/> <span class="text-muted-foreground"> Date fin réelle: </span> <span class="font-bold ml-2"> {{chantier?.DateFinReelle ? formatDate(chantier?.DateFinReelle) : ""}}</span> </div>
+                <div class="flex items-center"> <Calendar class="h-5 w-5 opacity-50 mr-1"/> <span class="text-muted-foreground"> Période prévue: </span> <span class="font-bold ml-2"> {{chantier?.DateDebutPrevue ? formatDate(chantier?.DateDebutPrevue) : ''}} - {{chantier?.DateFinPrevue  ? formatDate(chantier?.DateFinPrevue) : '' }}</span> </div>
+                <div class="flex items-center"> <Calendar class="h-5 w-5 opacity-50 mr-1"/> <span class="text-muted-foreground"> Période réelle: </span> <span class="font-bold ml-2"> {{chantier?.DateDebutReelle ? formatDate(chantier?.DateDebutReelle) : ''}} - {{chantier?.DateFinReDateDebutReelle  ? formatDate(chantier?.DateFinReDateDebutReelle) : '' }} </span> </div>
+
             </CardContent>
 
         </Card>
@@ -233,8 +288,9 @@ const formatDate=(date)=>{
             <CardContent>
                  <Sheet v-for="tache in taches" :key="tache.id" >
                     <SheetTrigger class="w-full">
-                       <div class="rounded-md bg-white shadow-md text-left font-bold border px-4 py-4 mb-4 flex flex-col">
-                            {{ tache.libelle }}
+                       <div class="rounded-md bg-white shadow-md text-left  border px-4 py-4 mb-4 flex justify-between items-center">
+                           <span class="font-bold"> {{ tache.libelle }} </span>
+                            <span class="border p-2 rounded text-sm text-muted-foreground">{{statutTache(tache.id)}}</span>
                         </div>
                     </SheetTrigger>
                     <SheetContent >
@@ -282,11 +338,13 @@ const formatDate=(date)=>{
                                                     data-[state=on]:text-white
                                                     data-[state=on]:border-black
                                                     transition-colors"
-                                                    :disabled="!etape.DateDebutReelle || etape.DateDebutReelle.trim()"
+                                                    :disabled="!etape.DateDebutReelle "
                                                 >
+                                               
                                             Terminer
                                             </ToggleGroupItem>
                                         </ToggleGroup>
+                                        
                                     </div>
                                 </ContextMenuTrigger>
                                 <ContextMenuContent>
@@ -300,7 +358,7 @@ const formatDate=(date)=>{
                                                     <DialogHeader>
                                                         <DialogTitle>Modifier étape</DialogTitle>
                                                         <DialogDescription>
-                                                            Créer une étape liée à la tâche chantier
+                                                            Modifier l'étape liée à la tâche chantier
                                                         </DialogDescription>
                                                     </DialogHeader>
                                                     <div class="grid gap-4 py-4">
@@ -316,6 +374,18 @@ const formatDate=(date)=>{
                                                             </Label>
                                                             <Input id="Description"  class="col-span-3" v-model="formEtape.Description" />
                                                         </div>    
+                                                        <div class="grid grid-cols-4 items-center gap-4">
+                                                            <Label for="DateDebutPrevue" class="text-left ">
+                                                                Date début prévue
+                                                            </Label>
+                                                            <Input id="DateDebutPrevue" type="date" class="col-span-3" v-model="formEtape.DateDebutPrevue" />
+                                                        </div>
+                                                        <div class="grid grid-cols-4 items-center gap-4">
+                                                            <Label for="DateDebutFin" class="text-right ">
+                                                                Date fin prévue
+                                                            </Label>
+                                                            <Input id="DateDebutFin" type="date" class="col-span-3" v-model="formEtape.DateFinPrevue"/>
+                                                        </div> 
                                                             <div class="grid grid-cols-4 items-center gap-4">
                                                             <Label for="Description" type="text" class="text-right ">
                                                                 Ouvrier
@@ -323,12 +393,12 @@ const formatDate=(date)=>{
                                                             <div class="col-span-3">
                                                                 <Select multiple v-model="formEtape.ouvrier_id">
                                                                     <SelectTrigger class="w-full">
-                                                                        <SelectValue placeholder="Selection un ouvrier"  />
+                                                                        <SelectValue placeholder="Selectionner un ouvrier"  />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
                                                                         <SelectGroup>
                                                                             <SelectLabel>Ouvriers</SelectLabel>
-                                                                            <SelectItem :value="ouvrier.id" v-for="ouvrier in ouvriers">
+                                                                            <SelectItem :value="ouvrier.id" v-for="ouvrier in ouvriers" :key="ouvrier.id">
                                                                                 {{ ouvrier.nom }} {{ ouvrier.Prenom }}
                                                                             </SelectItem>
                                                                         </SelectGroup>
@@ -456,8 +526,6 @@ const formatDate=(date)=>{
                                     </Label>
                                     <Input id="Description"  class="col-span-3" v-model="form.Description" />
                                 </div>
-
-                        
                             </div>
                             <DialogFooter>
                                 <DialogClose>
@@ -473,5 +541,105 @@ const formatDate=(date)=>{
                 </Dialog>
             </CardContent>
         </Card>
+        <Card class="bg-sidebar">
+            <CardHeader>
+               <span class="font-bold"> Matériels</span>
+            </CardHeader>
+            <CardContent>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div v-for="materielChantier in materielsChantier" class="border p-2 rounded bg-white grid grid-cols-4 gap-4 items-center">
+                         <span class="col-span-3 flex flex-col">
+                            <span>{{ materielChantier.nom_materiel }} </span>
+                            <span class="text-muted-foreground text-sm">{{ materielChantier.matricule }}</span>
+                            <span class="text-muted-foreground text-sm">{{ materielChantier.date_debut_affectation_formated}} - {{ materielChantier.date_fin_affectation_formated }}</span> 
+                         </span> 
+                         <span class="text-right"><Button @click.prevent="deleteMateriel(materielChantier)"><Trash/></Button></span>    
+                    </div>
+                </div>
+                 <Dialog>
+                    <DialogTrigger>
+                        <Button><Plus />Attribuer un matériel</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                    <form @submit.prevent="submitMateriel">
+                        <DialogHeader>
+                        <DialogTitle>Ajouter un matériel</DialogTitle>
+                        <DialogDescription>Attribuer un matériel au chantier</DialogDescription>
+                        </DialogHeader>
+                        <div class="grid gap-4 py-4">
+                        <div class="grid grid-cols-4 items-center gap-4">
+                            <Label for="libelle" class="text-right">
+                                Materiel
+                            </Label>
+                            <div class="col-span-3">
+                                <Popover v-model:open="open">
+                                    <PopoverTrigger class="border p-1 rounded w-full flex justify-between items-center">
+                                        <span> {{ materielSelected?.nom_materiel ?? 'Sélectionner un materiel' }} </span>
+                                         <ChevronsUpDown class="text-sm text-muted-foreground w-5 h-5"/>
+                                    </PopoverTrigger>
+                                    <PopoverContent>
+                                         <Command>
+                                            <CommandInput placeholder="Rechercher un matériel" />
+                                            <CommandList>
+                                                <CommandEmpty>Aucun matériel trouvé</CommandEmpty>
+                                                <CommandGroup heading="Matériels">
+                                                    <CommandItem 
+                                                        v-for="materielDisponible in materielsDisponibles "
+                                                        :key="materielDisponible.id"
+                                                        :value="materielDisponible.id"
+                                                        @select="() => {
+                                                            materielSelected = materielDisponible
+                                                            open = false
+                                                        }"
+
+                                                        class="flex justify-between"
+                                                    >
+                                                        <span>{{ materielDisponible.nom_materiel }}</span>
+                                                        <Check v-if="materielDisponible.id===materielSelected?.id"/>
+                                                    </CommandItem>
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-4 items-center gap-4">
+                            <Label for="date_debut_affectation" class="text-left">
+                            Date début prévue
+                            </Label>
+                            <Input
+                            id="date_debut_affectation"
+                            type="date"
+                            class="col-span-3"
+                            v-model="formMateriel.date_debut_affectation"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-4 items-center gap-4">
+                            <Label for="date_fin_affectation" class="text-right">
+                            Date fin prévue
+                            </Label>
+                            <Input
+                            id="date_fin_affectation"
+                            type="date"
+                            class="col-span-3"
+                            v-model="formMateriel.date_fin_affectation"
+                            />
+                        </div>
+                        </div>
+                        <DialogFooter>
+                        <DialogClose>
+                            <Button type="submit">
+                            <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
+                            Ajouter
+                            </Button>
+                        </DialogClose>
+                        </DialogFooter>
+                    </form>
+                    </DialogContent>
+                </Dialog>
+            </CardContent>
+        </Card> 
     </ContainerLayout>
 </template>

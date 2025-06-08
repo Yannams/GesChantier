@@ -95,18 +95,23 @@ class EtapeController extends Controller
             'updated_at'=>now(),
             'tache_id'=>'required'
         ];
-      
+          if($request->DateDebutPrevue){
+            $rules['DateDebutPrevue']='date|after_or_equal:today|before:DateFinPrevue';
+        }
+        if($request->DateFinPrevue){
+            $rules['DateFinPrevue']='date|after_or_equal:today|after:DateDebutPrevue';
+        }
         $validatedData= $request->validate($rules);
         if( $request->Etat=="en cours"){
-               $validatedData['DateDebutReelle']=now()->date;
+               $validatedData['DateDebutReelle']=now()->toDateString();
                $validatedData['Etat']="en cours";
             }
             if( $request->Etat=="terminé"){
                 if ($etape->DateDebutReelle=="") {
                    
                 }else {
-                    $validatedData['DateFinReelle']=now()->date;
-                    $validatedData['Etat']="en cours";
+                    $validatedData['DateFinReelle']=now()->toDateString();
+                    $validatedData['Etat']="terminé";
                 }
             }
              if( $request->Etat=="en attente"){
