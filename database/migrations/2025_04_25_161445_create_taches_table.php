@@ -16,6 +16,10 @@ return new class extends Migration
             $table->string('libelle');
             $table->text('Description');
             $table->enum('statut',['programmé','en cours', 'terminé']);
+            $table->date('DateDebutPrevue');
+            $table->date('DateFinPrevue');
+            $table->date('DateDebutReelle')->nullable();
+            $table->date('DateFinReelle')->nullable();
             $table->unsignedBigInteger(column: 'chantier_id')->nullable();
             $table->foreign('chantier_id')->references('id')->on('chantiers')->onDelete('cascade');
             $table->timestamps();

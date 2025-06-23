@@ -4,18 +4,18 @@
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { LoaderCircle } from 'lucide-vue-next';
-import { useForm } from '@inertiajs/vue3';
-import FormContainerLayout from '@/layouts/app/FormContainerLayout.vue';
-import { type BreadcrumbItem } from '@/types';
-const form = useForm({
-    nom_chantier: '',
-    localisation: '',
-    DateDebutPrevue: '',
-    DateFinPrevue: '',
-    DateDebutReelle: '',
-    DateFinReelle: '',
-    Etat:'en attente',
-});
+    import { useForm } from '@inertiajs/vue3';
+    import FormContainerLayout from '@/layouts/app/FormContainerLayout.vue';
+    import { type BreadcrumbItem } from '@/types';
+    const form = useForm({
+        nom_chantier: '',
+        localisation: '',
+        DateDebutPrevue: '',
+        DateFinPrevue: '',
+        DateDebutReelle: '',
+        DateFinReelle: '',
+        Etat:'en attente',
+    });
 
 const submit = () => {
     form.post(route('chantier.store'), {   

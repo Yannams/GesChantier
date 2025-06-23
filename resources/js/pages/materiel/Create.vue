@@ -1,6 +1,5 @@
-<script setup lang="ts">
+<script setup >
 import FormContainerLayout from '@/layouts/app/FormContainerLayout.vue';
-import { BreadcrumbItem } from '@/types';
 import { useForm } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';;
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,6 @@ import SelectLabel from '@/components/ui/select/SelectLabel.vue';
 import SelectGroup from '@/components/ui/select/SelectGroup.vue';
 import SelectItem from '@/components/ui/select/SelectItem.vue';
 import SelectValue from '@/components/ui/select/SelectValue.vue';
-import { ref } from 'vue';
 
 defineProps({
     categoriesMateriel:Object
@@ -36,7 +34,7 @@ const submit = () => {
     });
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
+const breadcrumbs = [
     {
         title: 'Matériel',
         href: route('materiel.index'),
@@ -51,6 +49,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 </script>
 
 <template>
+    
     <FormContainerLayout :breadcrumbs>
            <form @submit.prevent="submit"  class="flex flex-col gap-6">
             <div class="grid gap-6">
@@ -112,7 +111,6 @@ const breadcrumbs: BreadcrumbItem[] = [
                         </SelectContent>
                     </Select>
                 </div>
-                {{ form.errors }}
                                 
                 <Button type="submit" class="mt-2 w-full" tabindex="5" :disabled="form.processing">
                     <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />

@@ -60,15 +60,32 @@ class ChantierController extends Controller
      */
     public function show(Chantier $chantier)
     {
-        $taches= Tache::where('chantier_id',$chantier->id)->get();
+        $taches= Tache::where('chantier_id',$chantier->id)->get()->map(function($tache){
+            if($tache->DateDebutPrevue){
+                $tache->date_debut_prevue_formated = date('d/m/Y',strtotime($tache->DateDebutPrevue));
+            }
+            if($tache->DateFinPrevue){
+                $tache->date_fin_prevue_formated = date('d/m/Y',strtotime($tache->DateFinPrevue));
+            }
+            return $tache;
+        });
+ 
         $ouvriers= Ouvrier::all();
         $etapes=Etape::with(['ouvriers' => function ($query) {
                     $query->where('EtatAffectation', 'affecté');
                 }])->get();
-        $materielsDisponibles=Materiel::where('etat','disponible')->get();
-        $materielsChantier=$chantier->materiels()->get()->map(function($materiel){
+        $materielsDisponibles=Materiel::where('etat','disponible')->orWhere('quantite_disponible','>', 0)->get();
+        $materielsChantier=$chantier->materiels()->wherePivot('date_retour_effectif','=',null)->get()->map(function($materiel){
            $materiel->date_debut_affectation_formated=date('d/m/Y',strtotime($materiel->pivot->date_debut_affectation));
-           $materiel->date_fin_affectation_formated=date('d/m/Y',strtotime($materiel->pivot->date_fin_affectation));
+           $materiel->date_fin_affectation_formated=date('d/m/Y',strtotime($materiel->pivot->date_fin_affectation_prevue));
+           $materiel->date_retour_effectif_formated=date('d/m/Y',strtotime($materiel->pivot->date_retour_effectif));
+           return $materiel;
+        });
+
+        $materielsUtilisees=$chantier->materiels()->wherePivot('date_retour_effectif','!=',null)->get()->map(function($materiel){
+           $materiel->date_debut_affectation_formated=date('d/m/Y',strtotime($materiel->pivot->date_debut_affectation));
+           $materiel->date_fin_affectation_formated=date('d/m/Y',strtotime($materiel->pivot->date_fin_affectation_prevue));
+           $materiel->date_retour_effectif_formated=date('d/m/Y',strtotime($materiel->pivot->date_retour_effectif));
            return $materiel;
         });
         return Inertia::render('chantier/Show',[
@@ -77,7 +94,8 @@ class ChantierController extends Controller
             'ouvriers'=>$ouvriers,
             'etapes'=>$etapes,
             'materielsDisponibles'=>$materielsDisponibles,
-            'materielsChantier'=>$materielsChantier
+            'materielsChantier'=>$materielsChantier,
+            'materielsUtilisees'=>$materielsUtilisees,
         ]);
     }
 
@@ -113,7 +131,7 @@ class ChantierController extends Controller
                 'nom_chantier'=>'string',
                 'localisation'=>'string',
                 'Etat'=>"string",
-                    'updated_at'=>now(),
+                'updated_at'=>now(),
             ];
             if($request->DateDebutPrevue){
                 $rules['DateDebutPrevue']='date|after_or_equal:today|before:DateFinPrevue';

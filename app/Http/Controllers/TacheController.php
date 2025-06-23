@@ -33,11 +33,11 @@ class TacheController extends Controller
             'libelle'=>'string',
             'Description'=>'string',
             'statut'=>'string',
+            'DateDebutPrevue'=>'nullable|before_or_equal:DateFinPrevue|after:today',
+            'DateFinPrevue'=>'nullable|after_or_equal:DateDebutPrevue',
             'created_at'=>now(),
             'updated_at'=>now(),
-            
         ];
-      
         $validatedData= $request->validate($rules);
         $validatedData['chantier_id']=$request->chantier_id;
         Tache::create($validatedData);
@@ -65,7 +65,18 @@ class TacheController extends Controller
      */
     public function update(UpdateTacheRequest $request, Tache $tache)
     {
-        //
+        $rules=[
+            'libelle'=>'string',
+            'Description'=>'string',
+            'statut'=>'string',
+            'DateDebutPrevue'=>'nullable|before_or_equal:DateFinPrevue|after:today',
+            'DateFinPrevue'=>'nullable|after_or_equal:DateDebutPrevue',
+            'created_at'=>now(),
+            'updated_at'=>now(),
+        ];
+        $validatedData=$request->validate($rules);
+        $tache->update($validatedData);
+
     }
 
     /**

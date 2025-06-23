@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('quantite_totale')->nullable();
             $table->integer('quantite_disponible')->nullable();
             $table->boolean('gestion_par_unite')->default(false);
-            $table->enum('etat',['disponible','utilisé']);
+            $table->enum('etat',['disponible','utilisé'])->nullable();
             $table->unsignedBigInteger('categorie_materiel_id');
             $table->foreign('categorie_materiel_id')->references('id')->on('categorie_materiels')->onDelete('cascade');
             $table->timestamps();

@@ -10,7 +10,7 @@ class Tache extends Model
     /** @use HasFactory<\Database\Factories\TacheFactory> */
     use HasFactory;
 
-    protected $fillable=['libelle', 'Description','created_at', 'updated_at','chantier_id'];
+    protected $fillable=['libelle', 'Description','DateDebutPrevue','DateFinPrevue','created_at', 'updated_at','chantier_id'];
 
 
 }

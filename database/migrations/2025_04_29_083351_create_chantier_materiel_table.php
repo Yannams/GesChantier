@@ -17,7 +17,8 @@ return new class extends Migration
             $table->foreign('chantier_id')->references('id')->on('chantiers')->onDelete('cascade'); 
             $table->unsignedBigInteger('materiel_id');
             $table->foreign('materiel_id')->references('id')->on('materiels')->onDelete('cascade');
-            $table->date('date_debut_affectation');
+            $table->integer('quantite')->nullable();
+            $table->dateTime('date_debut_affectation');
             $table->date('date_fin_affectation_prevue');
             $table->date('date_retour_effectif')->nullable();
             $table->text('remarques')->nullable();
@@ -33,3 +34,4 @@ return new class extends Migration
         Schema::dropIfExists('chantier_materiel');
     }
 };
+

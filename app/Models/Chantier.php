@@ -15,6 +15,6 @@ class Chantier extends Model
 
     public function materiels() :BelongsToMany
      {
-        return $this->belongsToMany(Materiel::class)->withPivot('date_debut_affectation','date_fin_affectation','created_at','updated_at');
+        return $this->belongsToMany(Materiel::class)->withPivot('id','date_debut_affectation','date_fin_affectation_prevue','date_retour_effectif' ,'quantite','remarques','created_at','updated_at');
      }
 }
